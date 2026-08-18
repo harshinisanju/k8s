@@ -79,40 +79,27 @@ jobs:
                 set -e
 
                 NEW_TAG="${GITHUB_SHA}"
-                ACCOUNT="${{ secrets.AWS_ACCOUNT_ID }}"
-                REGION="${{ secrets.AWS_REGION }}"
-
-                echo "ACCOUNT: ${ACCOUNT}"
-                echo "REGION: ${REGION}"
-                echo "NEW_TAG: ${NEW_TAG}"
 
                 for SERVICE in auth gateway orders order-service product-service user-service; do
                   MANIFEST="gitops/k8s/backend/${SERVICE}.yml"
 
-                  echo "======================================"
                   echo "Updating ${SERVICE}"
-                  echo "Manifest: ${MANIFEST}"
-
                   echo "Before:"
-                  grep -n "image:" "$MANIFEST" || true
+                  grep -n "image:" "$MANIFEST"
 
-                  sed -i "s|${ACCOUNT}\.dkr\.ecr\.${REGION}\.amazonaws\.com/${SERVICE}:.*|${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/${SERVICE}:${NEW_TAG}|g" "$MANIFEST"
+                  sed -i -E "s|(image:.*${SERVICE}:).*|\1${NEW_TAG}|" "$MANIFEST"
 
                   echo "After:"
-                  grep -n "image:" "$MANIFEST" || true
+                  grep -n "image:" "$MANIFEST"
                 done
 
-                echo "======================================"
                 echo "Updating frontend"
 
-                echo "Before:"
-                grep -n "image:" gitops/k8s/frontend/deployment.yml || true
-
-                sed -i "s|${ACCOUNT}\.dkr\.ecr\.${REGION}\.amazonaws\.com/frontend:.*|${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/frontend:${NEW_TAG}|g" \
+                sed -i -E "s|(image:.*frontend:).*|\1${NEW_TAG}|" \
                   gitops/k8s/frontend/deployment.yml
 
-                echo "After:"
-                grep -n "image:" gitops/k8s/frontend/deployment.yml || true
+                echo "Frontend:"
+                grep -n "image:" gitops/k8s/frontend/deployment.yml
 
       - name: Commit and push updated manifests
         run: |
